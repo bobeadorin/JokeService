@@ -78,10 +78,10 @@ namespace JokeService.Token
                 RefreshToken = _refreshToken
             };
 
-            var content = new StringContent(JsonSerializer.Serialize(refreshToken), Encoding.UTF8, "application/json");
+            var content = new StringContent(JsonSerializer.Serialize(_refreshToken), Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PostAsync(url, content);
-            response.EnsureSuccessStatusCode();
+            //response.EnsureSuccessStatusCode();
 
             if (response.IsSuccessStatusCode)
             {

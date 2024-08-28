@@ -82,7 +82,7 @@ namespace JokeService.Controllers
             return Ok(id);
         }
 
-        [HttpGet("/getAllJokesByPagination{pageNumber},{pageSize}")]
+        [HttpGet("/getAllJokesByPagination/{pageNumber}/{pageSize}")]
         public IActionResult GetJokesByPagination(int pageNumber, int pageSize)
         { 
             var jokes = _jokeRepository.GetJokesByPagination(pageNumber, pageSize);
