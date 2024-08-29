@@ -1,5 +1,8 @@
 ﻿using JokeService.DbConnection;
 using JokeService.Models.JokeModels;
+using JokeService.Models.UserModels;
+using JokeService.RequestManager;
+using JokeService.RequestManager.Interfaces;
 using JokeService.SqlJokeRepository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,10 +11,12 @@ namespace JokeService.SqlJokeRepository
     public class JokeRepository : IJokeRepository
     {
         private readonly AppDbContext _context;
+        private readonly IHttpUserService _userService;
 
-        public JokeRepository(AppDbContext context)
+        public JokeRepository(AppDbContext context, IHttpUserService userService)
         {
             _context = context;
+            _userService = userService;
         }
 
         public List<Joke> GetAllJokes()
@@ -31,11 +36,22 @@ namespace JokeService.SqlJokeRepository
             return joke;
         }
 
-        public async Task<bool> AddJoke(Joke joke)
+        public async Task<bool> AddJoke(JokePost joke , Guid authorId)
         {
             try
             {
-                _context.Jokes.Add(joke);
+                var user = await  _userService.GetUserById(authorId);
+
+                var jokePost = new Joke
+                {
+                    Text = joke.Text,
+                    Category = joke.Category,
+                    AuthorId = authorId,
+                    AuthorUsername = user.Username,
+                    LikedBy = new List<Guid?> { }
+                };
+
+                _context.Jokes.Add(jokePost);
                 await _context.SaveChangesAsync();
 
                 return true;

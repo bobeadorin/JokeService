@@ -11,24 +11,32 @@ namespace JokeService.Middleware
             _next = next;
         }
 
-        public async Task Invoke(HttpContext context)
+       public async Task Invoke(HttpContext context)
         {
-            var endpoint = context.GetEndpoint();
+             var endpoint = context.GetEndpoint();
 
             if (endpoint != null)
             {
                 var authorizeAttribute = endpoint.Metadata.GetMetadata<AuthorizeAttribute>();
 
-                if (authorizeAttribute != null && !context.Request.Headers.ContainsKey("Authorization"))
+                if (authorizeAttribute != null)
                 {
                     var token = context.Request.Cookies["AccessToken"];
 
-                    if (!string.IsNullOrEmpty(token) && String.IsNullOrEmpty(context.Request.Headers["Authorization"]))
+                    if (!string.IsNullOrEmpty(token))
                     {
-                        context.Request.Headers.Add("Authorization", $"Bearer {token}");
+                        if (!context.Request.Headers.ContainsKey("Authorization"))
+                        {
+                            context.Request.Headers.Add("Authorization", $"Bearer {token}");
+                        }
+                        else if (string.IsNullOrEmpty(context.Request.Headers["Authorization"]))
+                        {
+                            context.Request.Headers["Authorization"] = $"Bearer {token}";
+                        }
                     }
                 }
             }
+
             await _next(context);
         }
     }

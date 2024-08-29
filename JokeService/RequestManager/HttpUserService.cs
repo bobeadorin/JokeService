@@ -32,7 +32,5 @@ namespace JokeService.RequestManager
             }
             throw new Exception("User not found");
         }
-
-
     }
 }

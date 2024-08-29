@@ -92,21 +92,30 @@ namespace JokeService.Controllers
             return Ok(jokes);
         }
 
+        [Authorize]
         [HttpPost("/postJoke")]
-        public async Task<IActionResult> PostJoke([FromBody] Joke joke)
+        public async Task<IActionResult> PostJoke([FromBody] JokePost joke)
         {
             try
             {
-                var isJokePosted = await _jokeRepository.AddJoke(joke);
+                var userClaims = User.Claims;
+                var userId = userClaims.FirstOrDefault(c => c.Type == "id")?.Value;
 
-                if(!isJokePosted) return BadRequest();
+                if (joke == null || string.IsNullOrEmpty(userId))
+                {
+                    return BadRequest("Invalid joke data or user ID");
+                }
+
+                var isJokePosted = await _jokeRepository.AddJoke(joke, new Guid(userId));
+
+                if (!isJokePosted) return BadRequest("Failed to post joke");
 
                 return Ok(isJokePosted);
             }
             catch (Exception ex)
             {
-                return StatusCode(500,ex.Message);
-            }   
+                return StatusCode(500, ex.Message);
+            }
         }
 
         [HttpDelete("/deleteJokeById/{Id}")]
