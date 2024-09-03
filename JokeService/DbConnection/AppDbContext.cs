@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using JokeService.Models.JokeModels;
+using JokeService.Models.UserFavoriteJokes;
 
 namespace JokeService.DbConnection
 {
@@ -18,6 +19,7 @@ namespace JokeService.DbConnection
         }
 
         public DbSet<Joke> Jokes { get; set; }
+        public DbSet<UserFavorites> UserFavorites { get; set; }
 
     }
 }

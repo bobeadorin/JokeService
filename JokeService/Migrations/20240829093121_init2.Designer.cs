@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JokeService.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240823104723_Init")]
-    partial class Init
+    [Migration("20240829093121_init2")]
+    partial class init2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -45,7 +45,6 @@ namespace JokeService.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LikedBy")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Likes")

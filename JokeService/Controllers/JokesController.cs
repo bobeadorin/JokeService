@@ -5,6 +5,7 @@ using JokeService.Models.JokeModels;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.AspNetCore.Authorization;
 using JokeService.RequestManager.Interfaces;
+using JokeService.Utility;
 
 namespace JokeService.Controllers
 {
@@ -21,7 +22,7 @@ namespace JokeService.Controllers
             _httpUserService = httpUserService;
         }
 
-        [Authorize]
+ 
         [HttpGet("/getAllJokes")]
         public IActionResult GetAllJokes()
         {
@@ -36,11 +37,25 @@ namespace JokeService.Controllers
             return Ok(jokes);
         }
 
+        [Authorize]
+        [HttpGet("/getUser/{id}")]
+        public async Task<IActionResult> GetUserById(Guid id)
+        {
+            try
+            {
+                var userData = await _httpUserService.GetUserById(id);
+                return Ok(userData);
 
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
         [Authorize]
-        [HttpPut("/likeJokeById/{id}")]
-        public IActionResult LikeJokeById(int id)
+        [HttpPut("/likeJokeById")]
+        public IActionResult LikeJokeById([FromBody]int id)
         {
             var userClaims = User.Claims;
             var userId = userClaims.FirstOrDefault(c => c.Type == "id")?.Value;
@@ -51,22 +66,6 @@ namespace JokeService.Controllers
 
             return Ok(id);
         }
-
-        
-        [HttpGet("/getUser/{id}")]
-        public async Task <IActionResult> GetUserById(Guid id)
-        {
-            try
-            {
-                var userData = await _httpUserService.GetUserById(id);
-                return Ok(userData);
-
-            }catch(Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
 
         [Authorize]
         [HttpPut("/dislikeJokeById/{id}")]
@@ -82,12 +81,14 @@ namespace JokeService.Controllers
             return Ok(id);
         }
 
-        [HttpGet("/getAllJokesByPagination/{pageNumber}/{pageSize}")]
-        public IActionResult GetJokesByPagination(int pageNumber, int pageSize)
-        { 
-            var jokes = _jokeRepository.GetJokesByPagination(pageNumber, pageSize);
+        [HttpGet("/getAllJokesByPagination/{pageNumber}/{pageSize}/category/{category}")]
+        public IActionResult GetJokesByPagination(int pageNumber, int pageSize,string category)
+        {   
+            var accessToken = Request.Cookies["AccessToken"];
 
-            if(jokes.Count == 0) return NotFound();
+            var jokes = _jokeRepository.GetJokesByPagination(pageNumber, pageSize, category, accessToken);
+
+            if (jokes.Count == 0) return NotFound();
 
             return Ok(jokes);
         }
@@ -118,6 +119,7 @@ namespace JokeService.Controllers
             }
         }
 
+        [Authorize]
         [HttpDelete("/deleteJokeById/{Id}")]
         public async Task<IActionResult> DeleteJokeById(int Id)
         {
@@ -138,6 +140,24 @@ namespace JokeService.Controllers
             {
                 return StatusCode(500,ex.Message);
             }
+        }
+
+
+        [Authorize]
+        [HttpPut("/addToFavorite")]
+        public IActionResult AddToFavorite([FromBody] int jokeId)
+        {
+            var accessToken = Request.Cookies["AccessToken"];
+
+            if (accessToken != null)
+            {
+                var userId = JwtUtility.RetriveDataFromToken(accessToken);
+                _jokeRepository.AddOrPopJokeToFavorite(jokeId , userId);
+
+                return Ok();
+             
+            }
+            return BadRequest();
         }
     }
 }

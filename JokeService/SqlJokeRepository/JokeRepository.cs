@@ -1,10 +1,13 @@
 ﻿using JokeService.DbConnection;
 using JokeService.Models.JokeModels;
+using JokeService.Models.UserFavoriteJokes;
 using JokeService.Models.UserModels;
 using JokeService.RequestManager;
 using JokeService.RequestManager.Interfaces;
 using JokeService.SqlJokeRepository.Interfaces;
+using JokeService.Utility;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace JokeService.SqlJokeRepository
 {
@@ -102,17 +105,86 @@ namespace JokeService.SqlJokeRepository
             return jokes;
         }
 
-        public List<Joke> GetJokesByPagination(int lastId, int pageSize)
+        public void AddOrPopJokeToFavorite(int jokeId, Guid userId)
         {
-            var jokesByPage = _context.Jokes
-                .OrderBy(j => j.Id == lastId)
-                .Where(j => j.Id > lastId)
-                .Take(pageSize)
-                .ToList();
+            var favoriteJoke = _context.UserFavorites.FirstOrDefault(x => x.UserId == userId && x.JokeId == jokeId);
 
+            if (favoriteJoke == null)
+            {
+                _context.UserFavorites.Add(new UserFavorites { JokeId = jokeId, UserId = userId });
+                _context.SaveChanges();
+            }
+            else
+            {
+                _context.UserFavorites.Remove(favoriteJoke);
+                _context.SaveChanges();
+            }
+        }
 
+        public List<JokeWithFavoriteFlag> GetJokesByPagination(int lastId, int pageSize,string category , string? accessToken)
+        {
+            var userId = JwtUtility.RetriveDataFromTokenWithPossibleNull(accessToken);
 
-            return jokesByPage;
+            HashSet<int> favouriteJokes = new HashSet<int>();
+
+            if (userId.HasValue) // Only query the database if userId is not null
+            {
+                favouriteJokes = _context.UserFavorites
+                                    .Where(f => f.UserId == userId.Value)
+                                    .Select(f => f.JokeId)
+                                    .ToHashSet();
+            }
+
+            List<JokeWithFavoriteFlag> jokesByPage;
+
+                if(category == "home")
+                {
+                    jokesByPage = _context.Jokes
+                   .OrderBy(j => j.Id >lastId)
+                   .Take(pageSize)
+                   .Select(j => new JokeWithFavoriteFlag
+                   {
+                       Joke =new Joke
+                       {
+                           Id = j.Id,
+                           Text = j.Text,
+                           Category = j.Category,
+                           AuthorUsername = j.AuthorUsername,
+                           Likes = j.Likes,
+                           LikedBy = j.LikedBy,
+                       },
+                   
+                       IsFavorite = userId.HasValue && favouriteJokes.Contains(j.Id),
+                       IsLiked = userId.HasValue && j.LikedBy.Contains(userId)
+                   })
+                   .ToList();
+                }
+                else
+                {
+                    jokesByPage = _context.Jokes
+                    .Where(j => j.Id > lastId &&  j.Category == category)
+                    .OrderBy(j => j.Id)
+                    .Take(pageSize)
+                    .Select(j => new JokeWithFavoriteFlag
+                    {
+                        Joke = new Joke
+                        {
+                            Id = j.Id,
+                            Text = j.Text,
+                            Category = j.Category,
+                            AuthorId = j.AuthorId,
+                            AuthorUsername = j.AuthorUsername,
+                            Likes = j.Likes,
+                            LikedBy = j.LikedBy,
+                        },
+
+                        IsFavorite = userId.HasValue && favouriteJokes.Contains(j.Id),
+                        IsLiked = userId.HasValue && j.LikedBy.Contains(userId)
+
+                    })
+                    .ToList();
+                }
+                return jokesByPage;
         }
 
 
@@ -130,10 +202,21 @@ namespace JokeService.SqlJokeRepository
 
             if (joke == null) return false;
 
-            joke.LikedBy.Add(userId);
-            joke.Likes++;
-            _context.Jokes.Update(joke);
-            _context.SaveChanges();
+            if (joke.LikedBy.Contains(userId))
+            {
+                joke.LikedBy?.Remove(userId);
+                joke.Likes--;
+                _context.Jokes.Update(joke);
+                _context.SaveChanges();
+            }
+            else
+            {
+                joke.LikedBy?.Add(userId);
+                joke.Likes++;
+                _context.Jokes.Update(joke);
+                _context.SaveChanges();
+            }
+          
             return true;
 
         }
@@ -150,6 +233,7 @@ namespace JokeService.SqlJokeRepository
             _context.SaveChanges();
             return true;
         }
+
 
 
     }
