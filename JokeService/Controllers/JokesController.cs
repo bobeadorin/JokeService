@@ -94,6 +94,19 @@ namespace JokeService.Controllers
         }
 
         [Authorize]
+        [HttpGet("/getUserFavoriteJokes")]
+        public IActionResult GetUserFavoriteJokes()
+        {
+            var userClaims = User.Claims;
+            var userId = userClaims.FirstOrDefault(c => c.Type == "id")?.Value;
+            
+            if (userId == null) return Unauthorized();
+            var jokes = _jokeRepository.GetFavoriteJokeList(new Guid(userId));
+
+            return Ok(jokes);
+        }
+
+        [Authorize]
         [HttpPost("/postJoke")]
         public async Task<IActionResult> PostJoke([FromBody] JokePost joke)
         {
