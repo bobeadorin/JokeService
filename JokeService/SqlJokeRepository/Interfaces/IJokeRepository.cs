@@ -13,5 +13,6 @@ namespace JokeService.SqlJokeRepository.Interfaces
         public bool LikeJokeById(int jokeId, Guid userId);
         public bool DislikeJokeById(int jokeId, Guid userId);
         public void AddOrPopJokeToFavorite(int jokeId, Guid userId);
+        public List<Joke> GetFavoriteJokeList(Guid userId);
     }
 }

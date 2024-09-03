@@ -22,6 +22,14 @@ namespace JokeService.SqlJokeRepository
             _userService = userService;
         }
 
+        public List<Joke> GetFavoriteJokeList(Guid userId) {
+                var jokes = _context.UserFavorites.Where(u => u.UserId == userId).Select( j => j.JokeId).ToList();
+                var jokesById = _context.Jokes.Where(j => jokes.Contains(j.Id)).ToList();
+            
+                return jokesById;
+        }
+
+
         public List<Joke> GetAllJokes()
         {
             var jokes = _context.Jokes.ToList();
