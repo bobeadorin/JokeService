@@ -82,13 +82,13 @@ namespace JokeService.Controllers
         }
 
         [HttpGet("/getAllJokesByPagination/{pageNumber}/{pageSize}/category/{category}")]
-        public IActionResult GetJokesByPagination(int pageNumber, int pageSize,string category)
-        {   
+        public IActionResult GetJokesByPagination(int pageNumber, int pageSize, string category)
+        {
             var accessToken = Request.Cookies["AccessToken"];
 
             var jokes = _jokeRepository.GetJokesByPagination(pageNumber, pageSize, category, accessToken);
 
-            if (jokes.Count == 0) return NotFound();
+            if (jokes.Count == 0) return Ok(jokes);
 
             return Ok(jokes);
         }

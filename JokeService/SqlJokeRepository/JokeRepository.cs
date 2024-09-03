@@ -121,70 +121,50 @@ namespace JokeService.SqlJokeRepository
             }
         }
 
-        public List<JokeWithFavoriteFlag> GetJokesByPagination(int lastId, int pageSize,string category , string? accessToken)
+        public List<JokeWithFavoriteFlag> GetJokesByPagination(int pageNumber, int pageSize, string category, string? accessToken)
         {
             var userId = JwtUtility.RetriveDataFromTokenWithPossibleNull(accessToken);
 
-            HashSet<int> favouriteJokes = new HashSet<int>();
+            var favoriteJokes = new HashSet<int>();
 
-            if (userId.HasValue) // Only query the database if userId is not null
+            if (userId.HasValue)
             {
-                favouriteJokes = _context.UserFavorites
-                                    .Where(f => f.UserId == userId.Value)
-                                    .Select(f => f.JokeId)
-                                    .ToHashSet();
+                favoriteJokes = _context.UserFavorites
+                    .Where(f => f.UserId == userId.Value)
+                    .Select(f => f.JokeId)
+                    .ToHashSet();
             }
 
             List<JokeWithFavoriteFlag> jokesByPage;
 
-                if(category == "home")
+            var query = _context.Jokes.AsQueryable();
+
+            if (category != "home")
+            {
+                query = query.Where(j => j.Category == category);
+            }
+
+            jokesByPage = query
+                .OrderBy(j => j.Id)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(j => new JokeWithFavoriteFlag
                 {
-                    jokesByPage = _context.Jokes
-                   .OrderBy(j => j.Id >lastId)
-                   .Take(pageSize)
-                   .Select(j => new JokeWithFavoriteFlag
-                   {
-                       Joke =new Joke
-                       {
-                           Id = j.Id,
-                           Text = j.Text,
-                           Category = j.Category,
-                           AuthorUsername = j.AuthorUsername,
-                           Likes = j.Likes,
-                           LikedBy = j.LikedBy,
-                       },
-                   
-                       IsFavorite = userId.HasValue && favouriteJokes.Contains(j.Id),
-                       IsLiked = userId.HasValue && j.LikedBy.Contains(userId)
-                   })
-                   .ToList();
-                }
-                else
-                {
-                    jokesByPage = _context.Jokes
-                    .Where(j => j.Id > lastId &&  j.Category == category)
-                    .OrderBy(j => j.Id)
-                    .Take(pageSize)
-                    .Select(j => new JokeWithFavoriteFlag
+                    Joke = new Joke
                     {
-                        Joke = new Joke
-                        {
-                            Id = j.Id,
-                            Text = j.Text,
-                            Category = j.Category,
-                            AuthorId = j.AuthorId,
-                            AuthorUsername = j.AuthorUsername,
-                            Likes = j.Likes,
-                            LikedBy = j.LikedBy,
-                        },
+                        Id = j.Id,
+                        Text = j.Text,
+                        Category = j.Category,
+                        AuthorUsername = j.AuthorUsername,
+                        Likes = j.Likes,
+                        LikedBy = j.LikedBy,
+                    },
+                    IsFavorite = userId.HasValue && favoriteJokes.Contains(j.Id),
+                    IsLiked = userId.HasValue && j.LikedBy.Contains(userId)
+                })
+                .ToList();
 
-                        IsFavorite = userId.HasValue && favouriteJokes.Contains(j.Id),
-                        IsLiked = userId.HasValue && j.LikedBy.Contains(userId)
-
-                    })
-                    .ToList();
-                }
-                return jokesByPage;
+            return jokesByPage;
         }
 
 
