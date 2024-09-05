@@ -29,6 +29,12 @@ namespace JokeService.SqlJokeRepository
                 return jokesById;
         }
 
+        public List<Joke> GetPostedJokes(Guid userId)
+        {
+            var jokesById = _context.Jokes.Where(j => j.AuthorId == userId).ToList();
+
+            return jokesById;
+        }
 
         public List<Joke> GetAllJokes()
         {

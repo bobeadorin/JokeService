@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.AspNetCore.Authorization;
 using JokeService.RequestManager.Interfaces;
 using JokeService.Utility;
+using JokeService.Models.UserModels;
 
 namespace JokeService.Controllers
 {
@@ -36,6 +37,8 @@ namespace JokeService.Controllers
 
             return Ok(jokes);
         }
+
+
 
         [Authorize]
         [HttpGet("/getUser/{id}")]
@@ -153,6 +156,16 @@ namespace JokeService.Controllers
             {
                 return StatusCode(500,ex.Message);
             }
+        }
+
+        [Authorize]
+        [HttpGet("/getPostedJokes/{userId}")]
+        public IActionResult GetPostedJokes(string userId) {
+
+            if (userId == null) return Unauthorized();
+            var jokes = _jokeRepository.GetPostedJokes(new Guid(userId));
+
+            return Ok(jokes);
         }
 
 
